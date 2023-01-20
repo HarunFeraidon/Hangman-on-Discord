@@ -3,12 +3,14 @@ import config
 from discord.ext import commands
 import constants
 import asyncio
+import sys
 
 # TODO
 # [X] verify secret phrase is from user and in a dm
 # [X] detect abort to end game
-# [] add time limit to secret phrase
-# [] add time limit to recieving a guess
+# [X] add time limit to secret phrase
+# [X] add time limit to recieving a guess
+# [X] length of phrase 
 # 
 
 
@@ -16,6 +18,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
+
+_ABORT = "abort"
 
 @bot.event
 async def on_ready():
@@ -25,14 +29,15 @@ async def on_ready():
 async def hangman(ctx):
     author = ctx.author
     await ctx.send(f"Getting the secret phrase from {author}")
-    await ctx.author.send("Reply with your secret phrase: ")
+    await ctx.author.send("Reply with your secret phrase (length < 40): ")
     # get phrase
     def check(msg):
-        return msg.author == ctx.author and str(msg.channel.type) == "private"
+        return len(msg.content) < 40 and msg.author == ctx.author and str(msg.channel.type) == "private"
     try:
-        reply = await bot.wait_for('message', check=check, timeout=15.0)
+        reply = await bot.wait_for('message', check=check, timeout=20.0)
     except asyncio.TimeoutError:
-        await ctx.send('Took too long, game ending.')
+        await ctx.send(f'{author} took too long, game ending.')
+        return
 
     phrase = reply.content.lower().strip()
     guessed_letters = set([])
@@ -53,15 +58,23 @@ async def hangman(ctx):
     gamewon = False
     safety_word = False
     while len(missing_letters) and wrong_guesses < 6:
-        guess = await bot.wait_for('message')
-        guess_author = guess.author
+        def check(msg):
+            return len(msg.content) == 1 or msg.content in {phrase, _ABORT}
+        try:
+            guess = await bot.wait_for('message', timeout=25.0, check=check)
+        except asyncio.TimeoutError:
+            await ctx.send('Nobody guessed. Imma just end this game.')
+            return
+        author = guess.author
         guess = guess.content.lower().strip()
+
         if guess == phrase:
             gamewon = True
             break
-        elif guess == "abort" and guess_author == ctx.author:
+        elif guess == _ABORT and author == ctx.author:
             safety_word = True
             break
+
         if guess not in guessed_letters:
             guessed_letters.add(guess)
             if guess in missing_letters:
