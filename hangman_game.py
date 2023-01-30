@@ -15,11 +15,13 @@ ABORT = "abort"
 lock = asyncio.Lock()
 is_alive_ = False
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
+
 
 @bot.event
 async def on_ready():
-    print(f'logged in as {bot.user}')
+    print(f"logged in as {bot.user}")
+
 
 @bot.command()
 async def hangman(ctx):
@@ -35,28 +37,35 @@ async def hangman(ctx):
         await ctx.author.send("Reply with your secret phrase (length < 40): ")
         # get phrase
         def check(msg):
-            return 1 < len(msg.content.strip()) < 40  and msg.author == ctx.author and str(msg.channel.type) == "private"
+            return (
+                1 < len(msg.content.strip()) < 40
+                and msg.author == ctx.author
+                and str(msg.channel.type) == "private"
+            )
+
         try:
-            reply = await bot.wait_for('message', check=check, timeout=25.0)
+            reply = await bot.wait_for("message", check=check, timeout=25.0)
         except asyncio.TimeoutError:
-            await ctx.send(f'{author} took too long, game ending.')
+            await ctx.send(f"{author} took too long, game ending.")
             return
 
         phrase = reply.content.lower().strip()
         guessed_letters = set([])
         missing_letters, censored_phrase = setup_game(phrase)
-        
-        await ctx.send(f' {author} has picked a phrase: {convert(censored_phrase)}')
-        
-        wrong_guesses=0
+
+        await ctx.send(f" {author} has picked a phrase: {convert(censored_phrase)}")
+
+        wrong_guesses = 0
         gamewon = False
         safety_word = False
         # loop until game wins or game loses
         while len(missing_letters) and wrong_guesses < 6:
+
             def check(msg):
                 return len(msg.content) == 1 or msg.content in {phrase, ABORT}
+
             try:
-                guess = await bot.wait_for('message', timeout=60.0, check=check)
+                guess = await bot.wait_for("message", timeout=60.0, check=check)
             except asyncio.TimeoutError:
                 await ctx.send("Nobody took a guess. I'll just end this game.")
                 return
@@ -78,8 +87,10 @@ async def hangman(ctx):
                         censored_phrase[index] = guess
                     missing_letters.pop(guess)
                 else:
-                    wrong_guesses+=1
-                await ctx.send(f"```{constants.HANGMANPICS[wrong_guesses]}```\n{convert(censored_phrase)}")
+                    wrong_guesses += 1
+                await ctx.send(
+                    f"```{constants.HANGMANPICS[wrong_guesses]}```\n{convert(censored_phrase)}"
+                )
             else:
                 await ctx.send("Already guessed, try again.")
         if len(missing_letters) == 0 or gamewon:
@@ -90,25 +101,28 @@ async def hangman(ctx):
             await ctx.send(f"Game aborted. The phrase was `{phrase}`")
         is_alive_ = False
 
+
 def setup_game(phrase):
-    missing_letters = {} 
+    missing_letters = {}
     censored_phrase = []
-    # build censored phrase and dict of missing letters 
+    # build censored phrase and dict of missing letters
     for idx, letter in enumerate(phrase):
-        if(letter != " "):
+        if letter != " ":
             censored_phrase += "-"
-            missing_letters.setdefault(letter,[]).append(idx)
+            missing_letters.setdefault(letter, []).append(idx)
         else:
             censored_phrase += " "
     return missing_letters, censored_phrase
 
+
 def convert(s):
     """
-    convert list of characters into string 
+    convert list of characters into string
     """
     result = ""
     for c in s:
         result += c
     return result
+
 
 bot.run(TOKEN)
