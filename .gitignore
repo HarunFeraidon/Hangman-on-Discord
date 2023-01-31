@@ -2,3 +2,4 @@ __pycache__/
 hangman_venv/
 .env
 .vscode/
+.DS_Store
