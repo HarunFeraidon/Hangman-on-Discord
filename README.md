@@ -1,12 +1,14 @@
 # Hangman-on-Discord
 
 A very simple hangman game you can play on Discord. 
+
 <img src="media/hangman.gif" alt="drawing" width="65%" height="65%"/>
 
 ## Setup
 Create your python virtual environment and install the necessary libraries.
 ```
 python3 -m venv hangman_venv
+source hangman_venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
